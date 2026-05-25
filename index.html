@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>任務排序系統 · Eisenhower Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --paper: #f5f1e8;
+    --paper-dark: #ebe5d3;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --ink-faded: #8a8579;
+    --rule: #c9c2ad;
+    --rule-soft: #ddd6c2;
+    --accent: #8b2c1e;
+    --q1: #8b2c1e;
+    --q2: #2c5f3f;
+    --q3: #8a6a1a;
+    --q4: #6b6358;
+    --q1-bg: #f0dcd6;
+    --q2-bg: #d9e5dd;
+    --q3-bg: #ebe0c4;
+    --q4-bg: #e0dcd0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  body {
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(139,44,30,0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(44,95,63,0.03) 0%, transparent 50%);
+  }
+  .app {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 32px 96px;
+  }
+  /* Header */
+  .masthead {
+    border-top: 3px double var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding: 28px 0 20px;
+    margin-bottom: 40px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: 24px;
+  }
+  .masthead-left, .masthead-right {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+  }
+  .masthead-right { text-align: right; }
+  .masthead-title {
+    font-family: 'Fraunces', serif;
+    font-size: 52px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-align: center;
+    margin: 0;
+    font-style: italic;
+  }
+  .masthead-sub {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 12px;
+    grid-column: 1 / -1;
+  }
+  /* Section heads */
+  .section {
+    margin-bottom: 48px;
+  }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-faded);
+    letter-spacing: 0.1em;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .section-meta {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faded);
+    letter-spacing: 0.05em;
+  }
+  /* Form */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 32px;
+    align-items: start;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .field-full { grid-column: 1 / -1; }
+  .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .label-hint {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 11px;
+    color: var(--ink-faded);
+    font-style: italic;
+  }
+  input[type="text"], input[type="date"] {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--ink);
+    padding: 8px 0;
+    font-family: 'Fraunces', serif;
+    font-size: 19px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+    border-radius: 0;
+  }
+  input[type="text"]:focus, input[type="date"]:focus {
+    border-bottom-color: var(--accent);
+  }
+  input[type="text"]::placeholder {
+    color: var(--ink-faded);
+    font-style: italic;
+  }
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 2px;
+    background: var(--rule);
+    border-radius: 0;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px; height: 16px;
+    background: var(--ink);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    background: var(--ink);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+  .slider-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    min-width: 32px;
+    text-align: right;
+    color: var(--ink);
+  }
+  .slider-scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faded);
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+  .urgency-readout {
+    background: var(--paper-dark);
+    border: 1px solid var(--rule);
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .urgency-readout-val {
+    font-size: 18px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 8px;
+  }
+  .btn {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 12px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+  }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--ink); background: transparent; }
+  /* Scatter Matrix */
+  .scatter-wrap {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 24px 32px 40px 48px;
+  }
+  .scatter-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .axis-line { stroke: var(--ink); stroke-width: 1; }
+  .axis-mid { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 3; }
+  .axis-tick { stroke: var(--rule); stroke-width: 1; }
+  .axis-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    fill: var(--ink-faded);
+    letter-spacing: 0.05em;
+  }
+  .axis-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    fill: var(--ink-soft);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .quad-label-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    fill: var(--ink-faded);
+  }
+  .quad-label-title {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    font-style: italic;
+    font-weight: 500;
+  }
+  .q1-label .quad-label-title { fill: var(--q1); }
+  .q2-label .quad-label-title { fill: var(--q2); }
+  .q3-label .quad-label-title { fill: var(--q3); }
+  .q4-label .quad-label-title { fill: var(--q4); }
+  .quad-bg-q1 { fill: var(--q1-bg); opacity: 0.35; }
+  .quad-bg-q2 { fill: var(--q2-bg); opacity: 0.35; }
+  .quad-bg-q3 { fill: var(--q3-bg); opacity: 0.35; }
+  .quad-bg-q4 { fill: var(--q4-bg); opacity: 0.35; }
+  .scatter-point {
+    cursor: pointer;
+    transition: r 0.15s ease;
+  }
+  .scatter-point-ring {
+    fill: var(--paper);
+    stroke-width: 2;
+  }
+  .scatter-point-core { stroke: none; }
+  .scatter-group:hover .scatter-point-core { r: 7; }
+  .scatter-group:hover .scatter-point-ring { r: 11; }
+  .scatter-group.q-1 .scatter-point-ring { stroke: var(--q1); }
+  .scatter-group.q-1 .scatter-point-core { fill: var(--q1); }
+  .scatter-group.q-2 .scatter-point-ring { stroke: var(--q2); }
+  .scatter-group.q-2 .scatter-point-core { fill: var(--q2); }
+  .scatter-group.q-3 .scatter-point-ring { stroke: var(--q3); }
+  .scatter-group.q-3 .scatter-point-core { fill: var(--q3); }
+  .scatter-group.q-4 .scatter-point-ring { stroke: var(--q4); }
+  .scatter-group.q-4 .scatter-point-core { fill: var(--q4); }
+  .scatter-label {
+    font-family: 'Fraunces', serif;
+    font-size: 12px;
+    font-weight: 500;
+    fill: var(--ink);
+    pointer-events: none;
+    paint-order: stroke fill;
+    stroke: var(--paper);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  .scatter-empty {
+    text-align: center;
+    padding: 80px 0;
+    color: var(--ink-faded);
+    font-style: italic;
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+  }
+  /* Hover tooltip */
+  .scatter-tooltip {
+    position: absolute;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 16px;
+    min-width: 200px;
+    max-width: 260px;
+    z-index: 100;
+    pointer-events: auto;
+    border: 1px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--rule);
+    transition: opacity 0.12s;
+  }
+  .scatter-tooltip-name {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(245, 241, 232, 0.2);
+    word-break: break-word;
+  }
+  .scatter-tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    margin: 4px 0;
+    color: var(--paper-dark);
+  }
+  .scatter-tooltip-row strong {
+    color: var(--paper);
+    font-weight: 500;
+  }
+  .scatter-tooltip-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--paper);
+    margin: 8px 0;
+    padding: 6px 0;
+    border-top: 1px solid rgba(245, 241, 232, 0.2);
+    border-bottom: 1px solid rgba(245, 241, 232, 0.2);
+    display: flex;
+    justify-content: space-between;
+  }
+  .scatter-tooltip-overdue { color: #f0997b !important; font-weight: 500; }
+  .scatter-tooltip-del {
+    margin-top: 10px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(245, 241, 232, 0.3);
+    color: var(--paper);
+    padding: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .scatter-tooltip-del:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .task-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--paper);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+  .task-del {
+    background: transparent;
+    border: none;
+    color: var(--ink-faded);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 16px;
+    line-height: 1;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .task-del:hover { color: var(--accent); }
+  /* Ranked list */
+  .rank-list {
+    border-top: 1px solid var(--rule);
+  }
+  .rank-row {
+    display: grid;
+    grid-template-columns: 48px 1fr auto auto auto;
+    gap: 20px;
+    align-items: center;
+    padding: 16px 4px;
+    border-bottom: 1px solid var(--rule-soft);
+    transition: background 0.1s;
+  }
+  .rank-row:hover { background: var(--paper-dark); }
+  .rank-num {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--ink-faded);
+    text-align: center;
+  }
+  .rank-row:nth-child(1) .rank-num,
+  .rank-row:nth-child(2) .rank-num,
+  .rank-row:nth-child(3) .rank-num { color: var(--accent); font-weight: 500; font-style: normal; }
+  .rank-name {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .rank-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faded);
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+  }
+  .rank-meta .overdue { color: var(--accent); font-weight: 500; }
+  .rank-quad {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .rank-quad.q-1 { color: var(--q1); border-color: var(--q1); }
+  .rank-quad.q-2 { color: var(--q2); border-color: var(--q2); }
+  .rank-quad.q-3 { color: var(--q3); border-color: var(--q3); }
+  .rank-quad.q-4 { color: var(--q4); border-color: var(--q4); }
+  .rank-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    min-width: 36px;
+    text-align: right;
+  }
+  .rank-empty {
+    text-align: center;
+    padding: 48px 0;
+    color: var(--ink-faded);
+    font-style: italic;
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+  }
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-bottom: 32px;
+  }
+  .stat {
+    background: var(--paper);
+    padding: 16px 18px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Fraunces', serif;
+    font-size: 34px;
+    font-weight: 400;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+  }
+  .stat.q-1 .stat-num { color: var(--q1); }
+  .stat.q-2 .stat-num { color: var(--q2); }
+  .stat.q-3 .stat-num { color: var(--q3); }
+  .stat.q-4 .stat-num { color: var(--q4); }
+  /* Footer */
+  .colophon {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+  }
+  .colophon em {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 13px;
+    display: block;
+    margin-bottom: 8px;
+    color: var(--ink-soft);
+  }
+  /* Responsive */
+  @media (max-width: 720px) {
+    .app { padding: 24px 18px 60px; }
+    .masthead { grid-template-columns: 1fr; }
+    .masthead-left, .masthead-right { text-align: center; }
+    .masthead-title { font-size: 36px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .scatter-wrap { padding: 16px 16px 32px 36px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .rank-row { grid-template-columns: 32px 1fr auto; gap: 12px; }
+    .rank-row .rank-quad, .rank-row .rank-score { display: none; }
+  }
+  /* Animations */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .anim { animation: fade-up 0.3s ease-out; }
+  /* Sample data button */
+  .sample-link {
+    background: transparent;
+    border: none;
+    color: var(--ink-faded);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .sample-link:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+// ============================================================
+// 核心邏輯：截止日期 → 緊急度自動計算
+// ============================================================
+const STORAGE_KEY = 'eisenhower-tasks-v1';
+
+// 緊急度規則（1-100）
+function urgencyFromDue(dueStr) {
+  if (!dueStr) return 5; // 沒設截止日 = 不緊急
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueStr);
+  due.setHours(0, 0, 0, 0);
+  const days = Math.round((due - today) / (1000 * 60 * 60 * 24));
+
+  if (days < 0) return 100;    // 已逾期
+  if (days === 0) return 100;  // 今日
+  if (days === 1) return 90;   // 明日
+  if (days <= 3) return 75;    // 3 天內
+  if (days <= 7) return 60;    // 7 天內
+  if (days <= 14) return 45;   // 14 天內
+  if (days <= 30) return 30;   // 30 天內
+  if (days <= 90) return 15;   // 90 天內
+  return 5;                    // 更久
+}
+
+function daysUntil(dueStr) {
+  if (!dueStr) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueStr);
+  due.setHours(0, 0, 0, 0);
+  return Math.round((due - today) / (1000 * 60 * 60 * 24));
+}
+
+function dueLabel(dueStr) {
+  const d = daysUntil(dueStr);
+  if (d === null) return '無截止';
+  if (d < 0) return `逾期 ${-d} 天`;
+  if (d === 0) return '今日截止';
+  if (d === 1) return '明日截止';
+  if (d <= 7) return `${d} 天後`;
+  if (d <= 30) return `${d} 天後`;
+  const due = new Date(dueStr);
+  return `${due.getMonth() + 1}/${due.getDate()} 截止`;
+}
+
+// 四象限判定（重要性、緊急度都以 50 為門檻）
+function quadrantOf(task) {
+  const urgency = urgencyFromDue(task.due);
+  const importantHigh = task.importance >= 50;
+  const urgentHigh = urgency >= 50;
+  if (importantHigh && urgentHigh) return 1;
+  if (importantHigh && !urgentHigh) return 2;
+  if (!importantHigh && urgentHigh) return 3;
+  return 4;
+}
+
+// 綜合分數：重要性權重 ×2，緊急度 ×1（對抗純緊急效應）
+function scoreOf(task) {
+  return task.importance * 2 + urgencyFromDue(task.due);
+}
+
+const QUAD_META = {
+  1: { title: '重要 · 緊急', id: 'Q1' },
+  2: { title: '重要 · 不緊急', id: 'Q2' },
+  3: { title: '不重要 · 緊急', id: 'Q3' },
+  4: { title: '不重要 · 不緊急', id: 'Q4' }
+};
+
+// ============================================================
+// localStorage hook
+// ============================================================
+function useLocalStorage(key, initial) {
+  const [value, setValue] = useState(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : initial;
+    } catch {
+      return initial;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {}
+  }, [key, value]);
+  return [value, setValue];
+}
+
+// 每天自動重新計算（午夜時讓緊急度更新）
+function useDailyTick() {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60 * 60 * 1000); // 每小時檢查
+    return () => clearInterval(interval);
+  }, []);
+}
+
+// ============================================================
+// Components
+// ============================================================
+function TaskForm({ onAdd }) {
+  const [name, setName] = useState('');
+  const [importance, setImportance] = useState(50);
+  const [due, setDue] = useState('');
+  const previewUrgency = urgencyFromDue(due);
+
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onAdd({
+      id: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      name: trimmed,
+      importance,
+      due: due || null,
+      createdAt: Date.now()
+    });
+    setName('');
+    setImportance(50);
+    setDue('');
+  };
+
+  return (
+    <section className="section">
+      <div className="section-head">
+        <span className="section-num">§ 01</span>
+        <h2 className="section-title">新增任務</h2>
+        <span className="section-meta">緊急度由截止日期自動推算</span>
+      </div>
+
+      <div className="form-grid">
+        <div className="field field-full">
+          <label className="label">
+            <span>任務名稱</span>
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && submit()}
+            placeholder="例:完成 Q3 季度報告"
+            maxLength={120}
+          />
+        </div>
+
+        <div className="field">
+          <label className="label">
+            <span>重要性</span>
+            <span className="label-hint">對長期目標的價值 · 1–100</span>
+          </label>
+          <div className="slider-row">
+            <input
+              type="range"
+              min="1" max="100" step="1"
+              value={importance}
+              onChange={e => setImportance(parseInt(e.target.value, 10))}
+            />
+            <span className="slider-val">{importance}</span>
+          </div>
+          <div className="slider-scale">
+            <span>瑣事</span>
+            <span>普通</span>
+            <span>關鍵</span>
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="label">
+            <span>截止日期</span>
+            <span className="label-hint">選填</span>
+          </label>
+          <input
+            type="date"
+            value={due}
+            onChange={e => setDue(e.target.value)}
+          />
+          <div className="urgency-readout">
+            <span>自動緊急度</span>
+            <span className="urgency-readout-val">{previewUrgency} / 100</span>
+          </div>
+        </div>
+
+        <div className="field-full btn-row">
+          <button className="btn" onClick={submit}>＋ 新增</button>
+          <button className="sample-link" onClick={() => {
+            setName(name || '範例任務');
+            setImportance(70);
+            const d = new Date();
+            d.setDate(d.getDate() + 3);
+            setDue(d.toISOString().slice(0, 10));
+          }}>填入範例</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Stats({ tasks }) {
+  const counts = useMemo(() => {
+    const c = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    tasks.forEach(t => { c[quadrantOf(t)]++; });
+    return c;
+  }, [tasks]);
+
+  return (
+    <div className="stats">
+      {[1, 2, 3, 4].map(q => (
+        <div key={q} className={`stat q-${q}`}>
+          <div className="stat-num">{counts[q]}</div>
+          <div className="stat-label">{QUAD_META[q].id} · {QUAD_META[q].title}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 穩定的 jitter：從 task id 雜湊出 -1.8 ~ +1.8 範圍的偏移
+function stableJitter(id, salt) {
+  let h = 2166136261;
+  const s = id + salt;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  // 轉成 0-1 後映射到 -1.8 ~ 1.8
+  const n = ((h >>> 0) % 1000) / 1000;
+  return (n - 0.5) * 3.6;
+}
+
+function ScatterMatrix({ tasks, onDelete }) {
+  const [hovered, setHovered] = useState(null); // { task, x, y }
+  const [pinned, setPinned] = useState(null);   // 點擊鎖定的 tooltip
+
+  // viewBox 座標系設計
+  // 整個 SVG: 800x500
+  // 繪圖區: x 60-770, y 30-440 (留出軸標籤空間)
+  const VB_W = 800, VB_H = 500;
+  const PLOT_L = 60, PLOT_R = 770, PLOT_T = 30, PLOT_B = 440;
+  const PLOT_W = PLOT_R - PLOT_L;  // 710
+  const PLOT_H = PLOT_B - PLOT_T;  // 410
+  const MID_X = PLOT_L + PLOT_W / 2; // 緊急度=50 的位置
+  const MID_Y = PLOT_T + PLOT_H / 2; // 重要性=50 的位置
+
+  // 座標映射：(score 0-100) → SVG 座標
+  // X: 緊急度 0 在左，100 在右
+  // Y: 重要性 0 在下（y=PLOT_B），100 在上（y=PLOT_T）
+  const xScale = (urgency) => PLOT_L + (urgency / 100) * PLOT_W;
+  const yScale = (importance) => PLOT_B - (importance / 100) * PLOT_H;
+
+  // 計算每個 task 的座標 + jitter
+  const points = useMemo(() => {
+    return tasks.map(t => {
+      const urgency = urgencyFromDue(t.due);
+      // 邊界內 jitter，避免溢出
+      const jx = stableJitter(t.id, 'x');
+      const jy = stableJitter(t.id, 'y');
+      const urgClamped = Math.max(1, Math.min(99, urgency + jx));
+      const impClamped = Math.max(1, Math.min(99, t.importance + jy));
+      return {
+        task: t,
+        cx: xScale(urgClamped),
+        cy: yScale(impClamped),
+        quadrant: quadrantOf(t),
+        urgency,
+        score: scoreOf(t)
+      };
+    });
+  }, [tasks]);
+
+  // tooltip 顯示的 task（hover 或 pinned）
+  const activeTooltip = pinned || hovered;
+
+  // tooltip 定位（SVG 座標 → 容器內絕對座標）
+  const wrapRef = React.useRef(null);
+  const svgRef = React.useRef(null);
+  const [tooltipPos, setTooltipPos] = useState({ left: 0, top: 0 });
+
+  useEffect(() => {
+    if (!activeTooltip || !svgRef.current || !wrapRef.current) return;
+    // 用 SVG 內的 ClientRect 計算
+    const svg = svgRef.current;
+    const wrap = wrapRef.current;
+    const svgRect = svg.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    // SVG viewBox 縮放比例
+    const scale = svgRect.width / VB_W;
+    const pixelX = svgRect.left - wrapRect.left + activeTooltip.cx * scale;
+    const pixelY = svgRect.top - wrapRect.top + activeTooltip.cy * scale;
+    // 預設 tooltip 在點右上方
+    let left = pixelX + 16;
+    let top = pixelY - 12;
+    // 邊界檢測：超出右邊則翻到左邊
+    if (left + 260 > wrapRect.width) left = pixelX - 260 - 16;
+    if (top < 8) top = 8;
+    setTooltipPos({ left, top });
+  }, [activeTooltip]);
+
+  if (tasks.length === 0) {
+    return (
+      <section className="section">
+        <div className="section-head">
+          <span className="section-num">§ 02</span>
+          <h2 className="section-title">四象限</h2>
+          <span className="section-meta">緊急度（X）× 重要性（Y）</span>
+        </div>
+        <Stats tasks={tasks} />
+        <div className="scatter-wrap">
+          <div className="scatter-empty">尚無任務 — 從上方新增第一項</div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="section">
+      <div className="section-head">
+        <span className="section-num">§ 02</span>
+        <h2 className="section-title">四象限</h2>
+        <span className="section-meta">緊急度（X）× 重要性（Y）· hover 看詳情</span>
+      </div>
+
+      <Stats tasks={tasks} />
+
+      <div className="scatter-wrap" ref={wrapRef} onClick={(e) => {
+        // 點空白處取消 pin
+        if (e.target.closest('.scatter-group') === null &&
+            e.target.closest('.scatter-tooltip') === null) {
+          setPinned(null);
+        }
+      }}>
+        <svg ref={svgRef} className="scatter-svg" viewBox={`0 0 ${VB_W} ${VB_H}`}
+             preserveAspectRatio="xMidYMid meet">
+
+          {/* 四象限背景色塊 */}
+          <rect className="quad-bg-q2" x={PLOT_L} y={PLOT_T} width={PLOT_W/2} height={PLOT_H/2} />
+          <rect className="quad-bg-q1" x={MID_X} y={PLOT_T} width={PLOT_W/2} height={PLOT_H/2} />
+          <rect className="quad-bg-q4" x={PLOT_L} y={MID_Y} width={PLOT_W/2} height={PLOT_H/2} />
+          <rect className="quad-bg-q3" x={MID_X} y={MID_Y} width={PLOT_W/2} height={PLOT_H/2} />
+
+          {/* 象限標籤（背景文字） */}
+          <g className="q2-label">
+            <text className="quad-label-id" x={PLOT_L + 12} y={PLOT_T + 20}>Q2</text>
+            <text className="quad-label-title" x={PLOT_L + 12} y={PLOT_T + 38}>重要 · 不緊急</text>
+          </g>
+          <g className="q1-label">
+            <text className="quad-label-id" x={PLOT_R - 12} y={PLOT_T + 20} textAnchor="end">Q1</text>
+            <text className="quad-label-title" x={PLOT_R - 12} y={PLOT_T + 38} textAnchor="end">重要 · 緊急</text>
+          </g>
+          <g className="q4-label">
+            <text className="quad-label-id" x={PLOT_L + 12} y={PLOT_B - 22}>Q4</text>
+            <text className="quad-label-title" x={PLOT_L + 12} y={PLOT_B - 8}>不重要 · 不緊急</text>
+          </g>
+          <g className="q3-label">
+            <text className="quad-label-id" x={PLOT_R - 12} y={PLOT_B - 22} textAnchor="end">Q3</text>
+            <text className="quad-label-title" x={PLOT_R - 12} y={PLOT_B - 8} textAnchor="end">不重要 · 緊急</text>
+          </g>
+
+          {/* 中線（分隔四象限） */}
+          <line className="axis-mid" x1={MID_X} y1={PLOT_T} x2={MID_X} y2={PLOT_B} />
+          <line className="axis-mid" x1={PLOT_L} y1={MID_Y} x2={PLOT_R} y2={MID_Y} />
+
+          {/* 邊界框 */}
+          <rect x={PLOT_L} y={PLOT_T} width={PLOT_W} height={PLOT_H}
+                fill="none" stroke="var(--ink)" strokeWidth="1" />
+
+          {/* 刻度（每 25 一格） */}
+          {[0, 25, 50, 75, 100].map(v => (
+            <g key={`x-${v}`}>
+              <line className="axis-tick" x1={xScale(v)} y1={PLOT_B} x2={xScale(v)} y2={PLOT_B + 4} />
+              <text className="axis-label" x={xScale(v)} y={PLOT_B + 16} textAnchor="middle">{v}</text>
+            </g>
+          ))}
+          {[0, 25, 50, 75, 100].map(v => (
+            <g key={`y-${v}`}>
+              <line className="axis-tick" x1={PLOT_L - 4} y1={yScale(v)} x2={PLOT_L} y2={yScale(v)} />
+              <text className="axis-label" x={PLOT_L - 8} y={yScale(v) + 3} textAnchor="end">{v}</text>
+            </g>
+          ))}
+
+          {/* 軸標題 */}
+          <text className="axis-title" x={PLOT_L + PLOT_W / 2} y={PLOT_B + 34} textAnchor="middle">
+            URGENCY · 緊急度 →
+          </text>
+          <text className="axis-title" x={-PLOT_T - PLOT_H / 2} y={18}
+                textAnchor="middle" transform="rotate(-90)">
+            ← IMPORTANCE · 重要性
+          </text>
+
+          {/* 資料點 */}
+          {points.map(p => {
+            const isActive = activeTooltip && activeTooltip.task.id === p.task.id;
+            return (
+              <g key={p.task.id}
+                 className={`scatter-group q-${p.quadrant}`}
+                 onMouseEnter={() => !pinned && setHovered(p)}
+                 onMouseLeave={() => !pinned && setHovered(null)}
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setPinned(pinned && pinned.task.id === p.task.id ? null : p);
+                 }}>
+                <circle className="scatter-point scatter-point-ring"
+                        cx={p.cx} cy={p.cy} r={isActive ? 11 : 9} />
+                <circle className="scatter-point scatter-point-core"
+                        cx={p.cx} cy={p.cy} r={isActive ? 7 : 5} />
+                <text className="scatter-label" x={p.cx + 12} y={p.cy + 4}>
+                  {p.task.name}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Tooltip */}
+        {activeTooltip && (() => {
+          const t = activeTooltip.task;
+          const d = daysUntil(t.due);
+          const overdue = d !== null && d < 0;
+          return (
+            <div className="scatter-tooltip"
+                 style={{ left: tooltipPos.left, top: tooltipPos.top }}
+                 onMouseEnter={() => { /* 保持顯示 */ }}
+                 onMouseLeave={() => !pinned && setHovered(null)}>
+              <div className="scatter-tooltip-name">{t.name}</div>
+              <div className="scatter-tooltip-row">
+                <span>重要性</span><strong>{t.importance} / 100</strong>
+              </div>
+              <div className="scatter-tooltip-row">
+                <span>緊急度</span><strong>{activeTooltip.urgency} / 100</strong>
+              </div>
+              <div className="scatter-tooltip-row">
+                <span>截止日期</span>
+                <strong className={overdue ? 'scatter-tooltip-overdue' : ''}>
+                  {dueLabel(t.due)}
+                </strong>
+              </div>
+              <div className="scatter-tooltip-score">
+                <span>綜合分數</span><strong>{activeTooltip.score}</strong>
+              </div>
+              <button className="scatter-tooltip-del"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPinned(null);
+                        setHovered(null);
+                        onDelete(t.id);
+                      }}>
+                刪除任務
+              </button>
+            </div>
+          );
+        })()}
+      </div>
+    </section>
+  );
+}
+
+function RankedList({ tasks, onDelete }) {
+  const sorted = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      const qa = quadrantOf(a), qb = quadrantOf(b);
+      if (qa !== qb) return qa - qb;
+      return scoreOf(b) - scoreOf(a);
+    });
+  }, [tasks]);
+
+  return (
+    <section className="section">
+      <div className="section-head">
+        <span className="section-num">§ 03</span>
+        <h2 className="section-title">優先順序總表</h2>
+        <span className="section-meta">象限 → 分數</span>
+      </div>
+
+      {sorted.length === 0 ? (
+        <div className="rank-empty">尚無任務 — 從上方新增第一項</div>
+      ) : (
+        <div className="rank-list">
+          {sorted.map((t, i) => {
+            const q = quadrantOf(t);
+            const d = daysUntil(t.due);
+            const overdue = d !== null && d < 0;
+            return (
+              <div key={t.id} className="rank-row anim">
+                <div className="rank-num">{String(i + 1).padStart(2, '0')}</div>
+                <div>
+                  <div className="rank-name">{t.name}</div>
+                  <div className="rank-meta">
+                    重要 {t.importance} · 緊急 {urgencyFromDue(t.due)} ·{' '}
+                    <span className={overdue ? 'overdue' : ''}>{dueLabel(t.due)}</span>
+                  </div>
+                </div>
+                <span className={`rank-quad q-${q}`}>{QUAD_META[q].id} · {QUAD_META[q].title}</span>
+                <div className="rank-score">{scoreOf(t)}</div>
+                <button className="task-del" onClick={() => onDelete(t.id)} aria-label="刪除">×</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function App() {
+  const [tasks, setTasks] = useLocalStorage(STORAGE_KEY, []);
+  useDailyTick(); // 每小時重新計算緊急度
+
+  const addTask = useCallback(t => setTasks(prev => [...prev, t]), [setTasks]);
+  const deleteTask = useCallback(id => setTasks(prev => prev.filter(t => t.id !== id)), [setTasks]);
+
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+  return (
+    <div className="app">
+      <header className="masthead">
+        <div className="masthead-left">Vol. 01 — Personal Edition</div>
+        <h1 className="masthead-title">The Daily Priorities</h1>
+        <div className="masthead-right">{dateStr}</div>
+        <div className="masthead-sub">— A Task Prioritization System Based on the Eisenhower Matrix —</div>
+      </header>
+
+      <TaskForm onAdd={addTask} />
+      <ScatterMatrix tasks={tasks} onDelete={deleteTask} />
+      <RankedList tasks={tasks} onDelete={deleteTask} />
+
+      <footer className="colophon">
+        <em>"What is important is seldom urgent, and what is urgent is seldom important."</em>
+        — Dwight D. Eisenhower · Stored locally in your browser
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
